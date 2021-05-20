@@ -18,25 +18,15 @@ import java.util.stream.Stream;
 public class HelperKata {
     private static final  String EMPTY_STRING = "";
     private static String ANTERIOR_BONO = null;
+    private static Set<String> codes = new HashSet<>();
+    private static  AtomicInteger counter = new AtomicInteger(0);
 
     public static Flux<CouponDetailDto> getListFromBase64File(final String fileBase64) {
         AtomicInteger counter = new AtomicInteger(0);
         String characterSeparated = FileCSVEnum.CHARACTER_DEFAULT.getId();
-        Set<String> codes = new HashSet<>();
-        ANTERIOR_BONO = null;
-        var fileconverted = createFluxFrom(fileBase64);
-        //fileconverted.subscribe(im-> System.out.println(im));
 
-
-
-
-      /*  try     )
-
-
-        {
-            return Flux.fromIterable(
-                    bufferedReader.lines().skip(1)
-                            .map(line -> getTupleOfLine(line, line.split(characterSeparated), characterSeparated))
+          return createFluxFrom(fileBase64)
+                            .map(HelperKata::)
                             .map(tuple -> {
                                 String dateValidated = null;
                                 String errorMessage = null;
@@ -54,8 +44,9 @@ public class HelperKata {
                                 } else {
                                     dateValidated = tuple.getT2();
                                 }
-
                                 bonoEnviado = tuple.getT1();
+
+
                                 if (ANTERIOR_BONO == null || ANTERIOR_BONO.equals("")) {
                                     ANTERIOR_BONO = typeBono(bonoEnviado);
                                     if (ANTERIOR_BONO == "") {
@@ -76,12 +67,11 @@ public class HelperKata {
                                         .withMessageError(errorMessage)
                                         .withTotalLinesFile(1)
                                         .build();
-                            }).collect(Collectors.toList())
-            );
+                            }).collect(Collectors.toList());
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        }*/
+
+
+
         return null;
     }
     private static Flux<String> createFluxFrom(String fileBase64) {
