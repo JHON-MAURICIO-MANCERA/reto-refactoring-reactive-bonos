@@ -26,7 +26,7 @@ public class HelperKata {
         String characterSeparated = FileCSVEnum.CHARACTER_DEFAULT.getId();
 
           return createFluxFrom(fileBase64)
-                            .map(HelperKata::)
+                            .map(HelperKata::createBonoEntity)
                             .map(tuple -> {
                                 String dateValidated = null;
                                 String errorMessage = null;
@@ -83,6 +83,26 @@ public class HelperKata {
                 Stream::close
         );
     }
+    private static ModelBonoEntity createBonoEntity (String line) {
+        String characterSeparated = FileCSVEnum.CHARACTER_DEFAULT.getId();
+        var row=Optional.of(List.of(line.split(characterSeparated))); // tiene creada la fila con la coma
+        return new ModelBonoEntity(validBonoEmpty(row),validDateEmpty(row));
+        //return completeCoupon(array) ? new ModelBonoEntity(array.get(0), array.get(1)) : incompleteCoupon(array);
+    }
+// valida el bono
+    private  static String validBonoEmpty(Optional<List<String>> row){
+       var bono= row.filter(colums -> !colums.isEmpty())
+               .map(colums-> colums.get(0)).orElse(EMPTY_STRING);
+        return bono;
+    }
+    //valida la fecha
+    private  static String validDateEmpty(Optional<List<String>> row){
+        var date= row.filter(colums -> !colums.isEmpty() && colums.size()>1 && colums.size()<=10)
+                .map(colums-> colums.get(1)).orElse(EMPTY_STRING);
+        return date;
+    }
+
+
     public static String typeBono(String bonoIn) {
         if (bonoIn.chars().allMatch(Character::isDigit)
                 && bonoIn.length() >= 12
