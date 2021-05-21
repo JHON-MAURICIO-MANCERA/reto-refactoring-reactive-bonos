@@ -9,6 +9,45 @@ public class CouponDetailDto {
     private String messageError;
     private int totalLinesFile;
 
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
+    }
+
+    public String getDueDate() {
+        return dueDate;
+    }
+
+    public void setDueDate(String dueDate) {
+        this.dueDate = dueDate;
+    }
+
+    public int getNumberLine() {
+        return numberLine;
+    }
+
+    public void setNumberLine(int numberLine) {
+        this.numberLine = numberLine;
+    }
+
+    public String getMessageError() {
+        return messageError;
+    }
+
+    public void setMessageError(String messageError) {
+        this.messageError = messageError;
+    }
+
+    public int getTotalLinesFile() {
+        return totalLinesFile;
+    }
+
+    public void setTotalLinesFile(int totalLinesFile) {
+        this.totalLinesFile = totalLinesFile;
+    }
 
     private CouponDetailDto() {
     }

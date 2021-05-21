@@ -17,46 +17,26 @@ import static java.util.Objects.isNull;
 
 public class HelperKata {
       private static String ANTERIOR_BONO = null;
-    private static Set<String> codes = new HashSet<>();
+    final static   Set<String> codes = new HashSet<>();
     private static AtomicInteger counter = new AtomicInteger(0);
-    // private  static   Optional<String> previusCode = Optional.of(ANTERIOR_BONO);
+
 
     public static Flux<CouponDetailDto> getListFromBase64File(final String fileBase64) {
         AtomicInteger counter = new AtomicInteger(0);
-        String characterSeparated = FileCSVEnum.CHARACTER_DEFAULT.getId();
 
         return createFluxFrom(fileBase64).skip(1)
                 .map(HelperKata::createBonoEntity)
-                .map(modelBonoEntity -> {
-
-                    String errorMessage = validateError(codes, modelBonoEntity);
-                    String dateValidated = conditionOfBoolean(errorMessage == null, modelBonoEntity.getDate(), null);
-
-                    return CouponDetailDto.aCouponDetailDto()
-                            .withCode(createBonoForObject(modelBonoEntity))
-                            .withDueDate(dateValidated)
-                            .withNumberLine(counter.incrementAndGet())
-                            .withMessageError(errorMessage)
-                            .withTotalLinesFile(1)
-                            .build();
-                });
-    }
+                .map(modelBono -> CouponDetailDto.aCouponDetailDto()
+                        .withCode(createBonoForObject(modelBono))
+                        .withMessageError(validateError(codes,modelBono))
+                        .withDueDate(conditionOfBoolean(validateError(codes,modelBono).equals(null),modelBono.getDate(),null))
+                        .withTotalLinesFile(1)
+                        .withNumberLine(counter.incrementAndGet())
+                        .build());
 
 
-// todo:pendiente
- /*   private static String validateCodeWithPrevius(Optional<List<String>> code, Optional<String> previusCode){
-               String bonoForObject;
-        previusCode.filter(pb-> pb.isBlank())
-                .map(bp->typeBono(code.toString()) )
-                .orElseGet(previusCode
-                        .filter(bp -> bp.isEmpty("")))
-
-
-
-
-        return null;
-    }*/
-
+                }
+// TODO: metodo general para validar un boolean y retornar
     private static String conditionOfBoolean(boolean b, String date, String o) {
         return (b) ? date : o;
     }
@@ -75,18 +55,17 @@ public class HelperKata {
         String characterSeparated = FileCSVEnum.CHARACTER_DEFAULT.getId();
         var row = Optional.of(List.of(line.split(characterSeparated))); // tiene creada la fila con la coma
         return new ModelBonoEntity(validcodeEmpty(row), validDateEmpty(row));// crea un modelo (bono,date)
-        //return completeCoupon(array) ? new ModelBonoEntity(array.get(0), array.get(1)) : incompleteCoupon(array);
+
     }
 
-    //// TODO:valida codigo no vacio o vacio
+    // valida codigo no vacio o vacio
     private static String validcodeEmpty(Optional<List<String>> row) {
         return row.filter(code -> !code.isEmpty())
                 .map(code -> code.get(0))
                 .orElse("");
-
     }
 
-    //TODO:valida la fecha vacia o no vacia
+    //valida la fecha vacia o no vacia
     private static String validDateEmpty(Optional<List<String>> row) {
         return row.filter(colums -> !colums.isEmpty())
                 .map(colums -> colums.get(1))
@@ -94,18 +73,20 @@ public class HelperKata {
     }
 
     //todo:valida si el bono completo está vacio
+
     private static boolean validateBonoCodAndDatIsBlank(ModelBonoEntity modelBonoEntity) {
+
         return modelBonoEntity.getCode().isBlank() || modelBonoEntity.getDate().isBlank();
     }
+    // TODO: ESTE BLOQUE ES DE CREACION DEL ERROR DE ACUERDO AL CODIGO Y A LA FECHA
+    private static String validateError(Set<String> codes, ModelBonoEntity modelBonoEntity ) {
 
-    private static String validateError(Set<String> codes, ModelBonoEntity modelBonoEntity) {
         if (validateBonoCodAndDatIsBlank(modelBonoEntity)) {
-            return ExperienceErrorsEnum.FILE_ERROR_COLUMN_EMPTY.toString();
+            return  ExperienceErrorsEnum.FILE_ERROR_COLUMN_EMPTY.toString();
         }
         return conditionOfBoolean(codes.add(modelBonoEntity.getCode()), dateValidate(modelBonoEntity), ExperienceErrorsEnum.FILE_ERROR_CODE_DUPLICATE.toString());
 
     }
-
     private static String dateValidate(ModelBonoEntity modelBonoEntity) {
         if (!validateDateRegex(modelBonoEntity.getDate())) {
             return ExperienceErrorsEnum.FILE_ERROR_DATE_PARSE.toString();
@@ -113,16 +94,14 @@ public class HelperKata {
         return conditionOfBoolean(validateDateIsMinor(modelBonoEntity.getDate()), ExperienceErrorsEnum.FILE_DATE_IS_MINOR_OR_EQUALS.toString(), null);
     }
 
-
+//TODO:VALIDA QUE TIPO DE CODIGO LLEGA
     public static String typeBono(String bonoIn) {
         if (bonoIn.matches(ValidateCouponEnum.ALPHANUMERIC.getTypeOfEnum())) {
             return ValidateCouponEnum.ALPHANUMERIC.getTypeOfEnum();}
 
         return  (boInEAN_39(bonoIn))?
                 ValidateCouponEnum.EAN_39.getTypeOfEnum()
-                : ValidateCouponEnum.EAN_13.getTypeOfEnum();
-
-
+               : ValidateCouponEnum.EAN_13.getTypeOfEnum();
     }
 
     private static boolean boInEAN_39(String codeIn) {
@@ -132,6 +111,8 @@ public class HelperKata {
         return codeIn.replace("*", "").length() >= 1
             && codeIn.replace("*", "").length() <= 43;}
 
+
+    //TODO: VALIDA EL FORMATO DE LA FECHA
     public static boolean validateDateRegex(String dateForValidate) {
         String regex = FileCSVEnum.PATTERN_DATE_DEFAULT.getId();
         Pattern pattern = Pattern.compile(regex);
@@ -157,7 +138,7 @@ public class HelperKata {
         }
 
     }
-
+//TODO: DEFINE EL CODIGO ANTERIOR Y ASIGNA A BONOFOROBJECT
     private static String createBonoForObject(ModelBonoEntity modelBonoEntity) {
         String codeActuality = modelBonoEntity.getCode();
         String bonoForObject;
