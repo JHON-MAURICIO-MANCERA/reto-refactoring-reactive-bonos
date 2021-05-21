@@ -25,60 +25,64 @@ public class HelperKata {
         AtomicInteger counter = new AtomicInteger(0);
         String characterSeparated = FileCSVEnum.CHARACTER_DEFAULT.getId();
 
-          return createFluxFrom(fileBase64)
+          return createFluxFrom(fileBase64).skip(1)
                             .map(HelperKata::createBonoEntity)
-                            .map(tuple -> {
-                                String dateValidated = null;
-                                String errorMessage = null;
-                                String bonoForObject = null;
-                                String bonoEnviado;
+                            .map(modelBonoEntity -> {
 
-                                if (tuple.getT1().isBlank() || tuple.getT2().isBlank()) {
-                                    errorMessage = ExperienceErrorsEnum.FILE_ERROR_COLUMN_EMPTY.toString();
-                                } else if (!codes.add(tuple.getT1())) {
-                                    errorMessage = ExperienceErrorsEnum.FILE_ERROR_CODE_DUPLICATE.toString();
-                                } else if (!validateDateRegex(tuple.getT2())) {
-                                    errorMessage = ExperienceErrorsEnum.FILE_ERROR_DATE_PARSE.toString();
-                                } else if (validateDateIsMinor(tuple.getT2())) {
-                                    errorMessage = ExperienceErrorsEnum.FILE_DATE_IS_MINOR_OR_EQUALS.toString();
-                                } else {
-                                    dateValidated = tuple.getT2();
-                                }
-                                bonoEnviado = tuple.getT1();
+                                String errorMessage =validateError(codes,modelBonoEntity);
+                                String dateValidated = (errorMessage == null)?modelBonoEntity.getDate():null;
 
-
-                                if (ANTERIOR_BONO == null || ANTERIOR_BONO.equals("")) {
-                                    ANTERIOR_BONO = typeBono(bonoEnviado);
-                                    if (ANTERIOR_BONO == "") {
-                                        bonoForObject = null;
-                                    } else {
-                                        bonoForObject = bonoEnviado;
-                                    }
-                                } else if (ANTERIOR_BONO.equals(typeBono(bonoEnviado))) {
-                                    bonoForObject = bonoEnviado;
-                                } else if (!ANTERIOR_BONO.equals(typeBono(bonoEnviado))) {
-                                    bonoForObject = null;
-                                }
-
-                                return CouponDetailDto.aCouponDetailDto()
-                                        .withCode(bonoForObject)
+                                return   CouponDetailDto.aCouponDetailDto()
+                                        .withCode(modelBonoEntity.getCode() )
                                         .withDueDate(dateValidated)
                                         .withNumberLine(counter.incrementAndGet())
                                         .withMessageError(errorMessage)
                                         .withTotalLinesFile(1)
                                         .build();
-                            }).collect(Collectors.toList());
+                            });
+
+
+                                      /*  if (modelBonoEntity.getCode().isBlank() || modelBonoEntity.getDate().isBlank()) {
+                                            errorMessage = ExperienceErrorsEnum.FILE_ERROR_COLUMN_EMPTY.toString();
+                                        } else if (!codes.add(modelBonoEntity.getCode())) {
+                                            errorMessage = ExperienceErrorsEnum.FILE_ERROR_CODE_DUPLICATE.toString();
+                                        } else if (!validateDateRegex(modelBonoEntity.getDate())) {
+                                            errorMessage = ExperienceErrorsEnum.FILE_ERROR_DATE_PARSE.toString();
+                                        } else if (validateDateIsMinor(modelBonoEntity.getDate())) {
+                                            errorMessage = ExperienceErrorsEnum.FILE_DATE_IS_MINOR_OR_EQUALS.toString();
+                                        } else {
+                                            dateValidated = modelBonoEntity.getDate();
+                                        }
+                                        bonoEnviado = modelBonoEntity.getCode();
+
+
+                                        if (ANTERIOR_BONO == null || ANTERIOR_BONO.equals("")) {
+                                            ANTERIOR_BONO = typeBono(bonoEnviado);
+                                            if (ANTERIOR_BONO == "") {
+                                                bonoForObject = null;
+                                            } else {
+                                                bonoForObject = bonoEnviado;
+                                            }
+                                        } else if (ANTERIOR_BONO.equals(typeBono(bonoEnviado))) {
+                                            bonoForObject = bonoEnviado;
+                                        } else if (!ANTERIOR_BONO.equals(typeBono(bonoEnviado))) {
+                                            bonoForObject = null;
+                                        }
+*/
 
 
 
 
-        return null;
+
+
+
+
     }
     private static Flux<String> createFluxFrom(String fileBase64) {
         return Flux.using(
                 () -> new BufferedReader(new InputStreamReader(
                         new ByteArrayInputStream(decodeBase64(fileBase64))
-                )).lines().skip(1),
+                )).lines(),
                 Flux::fromStream,
                 Stream::close
         );
@@ -86,21 +90,44 @@ public class HelperKata {
     private static ModelBonoEntity createBonoEntity (String line) {
         String characterSeparated = FileCSVEnum.CHARACTER_DEFAULT.getId();
         var row=Optional.of(List.of(line.split(characterSeparated))); // tiene creada la fila con la coma
-        return new ModelBonoEntity(validBonoEmpty(row),validDateEmpty(row));
+        return new ModelBonoEntity(validcodeEmpty(row),validDateEmpty(row));// crea un modelo (bono,date)
         //return completeCoupon(array) ? new ModelBonoEntity(array.get(0), array.get(1)) : incompleteCoupon(array);
     }
-// valida el bono
-    private  static String validBonoEmpty(Optional<List<String>> row){
-       var bono= row.filter(colums -> !colums.isEmpty())
-               .map(colums-> colums.get(0)).orElse(EMPTY_STRING);
-        return bono;
+//// valida codigo no vacio o vacio
+    private  static String validcodeEmpty(Optional<List<String>> row){
+      return  row.filter(colums -> !colums.isEmpty())
+               .map(colums-> colums.get(0))
+               .orElse(EMPTY_STRING);
+
     }
-    //valida la fecha
+    //valida la fecha vacia o no vacia
     private  static String validDateEmpty(Optional<List<String>> row){
-        var date= row.filter(colums -> !colums.isEmpty() && colums.size()>1 && colums.size()<=10)
-                .map(colums-> colums.get(1)).orElse(EMPTY_STRING);
-        return date;
+        return   row.filter(colums -> !colums.isEmpty() )
+                .map(colums-> colums.get(1))
+                .orElse(EMPTY_STRING);
+
     }
+    private static boolean validateBonoCodDatIsBlank(ModelBonoEntity modelBonoEntity) {
+        return modelBonoEntity.getCode().isBlank() || modelBonoEntity.getDate().isBlank();
+    }
+    private static String validateError(Set<String> codes, ModelBonoEntity modelBonoEntity) {
+        if (validateBonoCodDatIsBlank(modelBonoEntity)) {
+            return ExperienceErrorsEnum.FILE_ERROR_COLUMN_EMPTY.toString();
+        }
+        return codes.add(modelBonoEntity.getCode()) ?
+                dateValidate(modelBonoEntity)
+                :ExperienceErrorsEnum.FILE_ERROR_CODE_DUPLICATE.toString();
+
+    }
+private static String dateValidate(ModelBonoEntity modelBonoEntity){
+    if (!validateDateRegex(modelBonoEntity.getDate())){
+        return   ExperienceErrorsEnum.FILE_ERROR_DATE_PARSE.toString();
+    }
+     return validateDateIsMinor(modelBonoEntity.getDate())?
+             ExperienceErrorsEnum.FILE_DATE_IS_MINOR_OR_EQUALS.toString()
+             :null;
+}
+
 
 
     public static String typeBono(String bonoIn) {
@@ -132,15 +159,7 @@ public class HelperKata {
 
     }
 
-    private static Tuple2<String, String> getTupleOfLine(String line, String[] array, String characterSeparated) {
-        return Objects.isNull(array) || array.length == 0
-                ? Tuples.of(EMPTY_STRING, EMPTY_STRING)
-                : array.length < 2
-                ? line.startsWith(characterSeparated)
-                ? Tuples.of(EMPTY_STRING, array[0])
-                : Tuples.of(array[0], EMPTY_STRING)
-                : Tuples.of(array[0], array[1]);
-    }
+
 
     public static boolean validateDateIsMinor(String dateForValidate) {
         try {
