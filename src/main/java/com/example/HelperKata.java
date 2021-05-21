@@ -18,29 +18,29 @@ import static java.util.Objects.isNull;
 public class HelperKata {
       private static String ANTERIOR_BONO = null;
     final static   Set<String> codes = new HashSet<>();
-    private static AtomicInteger counter = new AtomicInteger(0);
+    final static AtomicInteger counter = new AtomicInteger(0);
 
 
     public static Flux<CouponDetailDto> getListFromBase64File(final String fileBase64) {
-        AtomicInteger counter = new AtomicInteger(0);
+
 
         return createFluxFrom(fileBase64).skip(1)
                 .map(HelperKata::createBonoEntity)
                 .map(modelBono -> CouponDetailDto.aCouponDetailDto()
                         .withCode(createBonoForObject(modelBono))
                         .withMessageError(validateError(codes,modelBono))
-                        .withDueDate(conditionOfBoolean(validateError(codes,modelBono).equals(null),modelBono.getDate(),null))
+                        .withDueDate(conditionOfBoolean(validateError(codes,modelBono) ==(null),modelBono.getDate(),null))
                         .withTotalLinesFile(1)
                         .withNumberLine(counter.incrementAndGet())
                         .build());
 
 
                 }
-// TODO: metodo general para validar un boolean y retornar
-    private static String conditionOfBoolean(boolean b, String date, String o) {
-        return (b) ? date : o;
+// TODO: metodo general para validar un boolean y retornar OTRA FUNCION O UNA ASIGNACION
+    private static String conditionOfBoolean(boolean condicion, String outByTrue, String outByFalse) {
+        return (condicion) ? outByTrue : outByFalse;
     }
-
+// TODO: CREACION DEL FLUX A PARTIR DEL ARCHIVO BASE 64
     private static Flux<String> createFluxFrom(String fileBase64) {
         return Flux.using(
                 () -> new BufferedReader(new InputStreamReader(
