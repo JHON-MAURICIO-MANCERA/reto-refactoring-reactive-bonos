@@ -12,12 +12,15 @@ import java.util.regex.Pattern;
 
 import java.util.stream.Stream;
 
+import static java.util.Objects.isNull;
+
 
 public class HelperKata {
-    private static final  String EMPTY_STRING = "";
+    private static final  String EMPTY = "";
     private static String ANTERIOR_BONO = null;
     private static Set<String> codes = new HashSet<>();
     private static  AtomicInteger counter = new AtomicInteger(0);
+   // private  static   Optional<String> previusCode = Optional.of(ANTERIOR_BONO);
 
     public static Flux<CouponDetailDto> getListFromBase64File(final String fileBase64) {
         AtomicInteger counter = new AtomicInteger(0);
@@ -31,7 +34,7 @@ public class HelperKata {
                                 String dateValidated = conditionOfBoolean(errorMessage == null, modelBonoEntity.getDate(), null);
 
                                 return   CouponDetailDto.aCouponDetailDto()
-                                        .withCode(modelBonoEntity.getCode() )
+                                        .withCode(createBonoForObject(modelBonoEntity))
                                         .withDueDate(dateValidated)
                                         .withNumberLine(counter.incrementAndGet())
                                         .withMessageError(errorMessage)
@@ -43,8 +46,8 @@ public class HelperKata {
                                      /*
 
 
-                                        if (ANTERIOR_BONO == null || ANTERIOR_BONO.equals("")) {
-                                            ANTERIOR_BONO = typeBono(bonoEnviado);
+                                       // if (ANTERIOR_BONO == null || ANTERIOR_BONO.equals("")) {
+                                         //   ANTERIOR_BONO = typeBono(bonoEnviado);
                                             if (ANTERIOR_BONO == "") {
                                                 bonoForObject = null;
                                             } else {
@@ -56,8 +59,22 @@ public class HelperKata {
                                             bonoForObject = null;
                                         }
 */
-
     }
+
+
+// todo:pendiente
+ /*   private static String validateCodeWithPrevius(Optional<List<String>> code, Optional<String> previusCode){
+               String bonoForObject;
+        previusCode.filter(pb-> pb.isBlank())
+                .map(bp->typeBono(code.toString()) )
+                .orElseGet(previusCode
+                        .filter(bp -> bp.isEmpty("")))
+
+
+
+
+        return null;
+    }*/
 
     private static String conditionOfBoolean(boolean b, String date, String o) {
         return (b) ? date : o;
@@ -78,25 +95,25 @@ public class HelperKata {
         return new ModelBonoEntity(validcodeEmpty(row),validDateEmpty(row));// crea un modelo (bono,date)
         //return completeCoupon(array) ? new ModelBonoEntity(array.get(0), array.get(1)) : incompleteCoupon(array);
     }
-//// valida codigo no vacio o vacio
+//// TODO:valida codigo no vacio o vacio
     private  static String validcodeEmpty(Optional<List<String>> row){
-      return  row.filter(colums -> !colums.isEmpty())
-               .map(colums-> colums.get(0))
-               .orElse(EMPTY_STRING);
+      return  row.filter(code -> !code.isEmpty())
+               .map(code  -> code.get(0))
+               .orElse(EMPTY);
 
     }
-    //valida la fecha vacia o no vacia
+    //TODO:valida la fecha vacia o no vacia
     private  static String validDateEmpty(Optional<List<String>> row){
         return   row.filter(colums -> !colums.isEmpty() )
                 .map(colums-> colums.get(1))
-                .orElse(EMPTY_STRING);
+                .orElse(EMPTY);
 
     }
-    private static boolean validateBonoCodDatIsBlank(ModelBonoEntity modelBonoEntity) {
+    private static boolean validateBonoCodAndDatIsBlank(ModelBonoEntity modelBonoEntity) {
         return modelBonoEntity.getCode().isBlank() || modelBonoEntity.getDate().isBlank();
     }
     private static String validateError(Set<String> codes, ModelBonoEntity modelBonoEntity) {
-        if (validateBonoCodDatIsBlank(modelBonoEntity)) {
+        if (validateBonoCodAndDatIsBlank(modelBonoEntity)) {
             return ExperienceErrorsEnum.FILE_ERROR_COLUMN_EMPTY.toString();
         }
         return conditionOfBoolean(codes.add(modelBonoEntity.getCode()), dateValidate(modelBonoEntity), ExperienceErrorsEnum.FILE_ERROR_CODE_DUPLICATE.toString());
@@ -112,20 +129,25 @@ private static String dateValidate(ModelBonoEntity modelBonoEntity){
 
 
     public static String typeBono(String bonoIn) {
-        if (bonoIn.chars().allMatch(Character::isDigit)
-                && bonoIn.length() >= 12
-                && bonoIn.length() <= 13) {
-            return ValidateCouponEnum.EAN_13.getTypeOfEnum();
-        }
+        if (codeLengValidate(bonoIn)) return ValidateCouponEnum.EAN_13.getTypeOfEnum();
         if (bonoIn.startsWith("*")
                 && bonoIn.replace("*", "").length() >= 1
                 && bonoIn.replace("*", "").length() <= 43) {
             return ValidateCouponEnum.EAN_39.getTypeOfEnum();
 
         }
-        else {
-            return ValidateCouponEnum.ALPHANUMERIC.getTypeOfEnum();
+
+        return ValidateCouponEnum.ALPHANUMERIC.getTypeOfEnum();
+
+    }
+
+    private static boolean codeLengValidate(String bonoIn) {
+        if (bonoIn.chars().allMatch(Character::isDigit)
+                && bonoIn.length() >= 12
+                && bonoIn.length() <= 13) {
+            return true;
         }
+        return false;
     }
 
     public static boolean validateDateRegex(String dateForValidate) {
@@ -149,14 +171,23 @@ private static String dateValidate(ModelBonoEntity modelBonoEntity){
             Date dateCompare = sdf.parse(dateForValidate);
             if (dateCompare.compareTo(dateActual) < 0) {
                 return true;
-            } else if (dateCompare.compareTo(dateActual) == 0) {
-                return true;
             }
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
         return false;
+    }
+    private static String createBonoForObject(ModelBonoEntity modelBonoEntity) {
+        String codeActuality = modelBonoEntity.getCode();
+        String bonoForObject;
+        if (isNull(ANTERIOR_BONO)) {
+            ANTERIOR_BONO = typeBono(codeActuality);
+            bonoForObject = codeActuality;
+        } else {
+            bonoForObject = ANTERIOR_BONO.equals(typeBono(codeActuality)) ? codeActuality : null;
+        }
+        return bonoForObject;
     }
 
 }
