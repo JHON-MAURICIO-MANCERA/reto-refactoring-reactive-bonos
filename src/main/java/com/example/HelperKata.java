@@ -2,8 +2,6 @@ package com.example;
 
 
 import reactor.core.publisher.Flux;
-import reactor.util.function.Tuple2;
-import reactor.util.function.Tuples;
 
 import java.io.*;
 import java.text.SimpleDateFormat;
@@ -11,7 +9,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+
 import java.util.stream.Stream;
 
 
@@ -30,7 +28,7 @@ public class HelperKata {
                             .map(modelBonoEntity -> {
 
                                 String errorMessage =validateError(codes,modelBonoEntity);
-                                String dateValidated = (errorMessage == null)?modelBonoEntity.getDate():null;
+                                String dateValidated = conditionOfBoolean(errorMessage == null, modelBonoEntity.getDate(), null);
 
                                 return   CouponDetailDto.aCouponDetailDto()
                                         .withCode(modelBonoEntity.getCode() )
@@ -42,18 +40,7 @@ public class HelperKata {
                             });
 
 
-                                      /*  if (modelBonoEntity.getCode().isBlank() || modelBonoEntity.getDate().isBlank()) {
-                                            errorMessage = ExperienceErrorsEnum.FILE_ERROR_COLUMN_EMPTY.toString();
-                                        } else if (!codes.add(modelBonoEntity.getCode())) {
-                                            errorMessage = ExperienceErrorsEnum.FILE_ERROR_CODE_DUPLICATE.toString();
-                                        } else if (!validateDateRegex(modelBonoEntity.getDate())) {
-                                            errorMessage = ExperienceErrorsEnum.FILE_ERROR_DATE_PARSE.toString();
-                                        } else if (validateDateIsMinor(modelBonoEntity.getDate())) {
-                                            errorMessage = ExperienceErrorsEnum.FILE_DATE_IS_MINOR_OR_EQUALS.toString();
-                                        } else {
-                                            dateValidated = modelBonoEntity.getDate();
-                                        }
-                                        bonoEnviado = modelBonoEntity.getCode();
+                                     /*
 
 
                                         if (ANTERIOR_BONO == null || ANTERIOR_BONO.equals("")) {
@@ -70,14 +57,12 @@ public class HelperKata {
                                         }
 */
 
-
-
-
-
-
-
-
     }
+
+    private static String conditionOfBoolean(boolean b, String date, String o) {
+        return (b) ? date : o;
+    }
+
     private static Flux<String> createFluxFrom(String fileBase64) {
         return Flux.using(
                 () -> new BufferedReader(new InputStreamReader(
@@ -114,18 +99,14 @@ public class HelperKata {
         if (validateBonoCodDatIsBlank(modelBonoEntity)) {
             return ExperienceErrorsEnum.FILE_ERROR_COLUMN_EMPTY.toString();
         }
-        return codes.add(modelBonoEntity.getCode()) ?
-                dateValidate(modelBonoEntity)
-                :ExperienceErrorsEnum.FILE_ERROR_CODE_DUPLICATE.toString();
+        return conditionOfBoolean(codes.add(modelBonoEntity.getCode()), dateValidate(modelBonoEntity), ExperienceErrorsEnum.FILE_ERROR_CODE_DUPLICATE.toString());
 
     }
 private static String dateValidate(ModelBonoEntity modelBonoEntity){
     if (!validateDateRegex(modelBonoEntity.getDate())){
         return   ExperienceErrorsEnum.FILE_ERROR_DATE_PARSE.toString();
     }
-     return validateDateIsMinor(modelBonoEntity.getDate())?
-             ExperienceErrorsEnum.FILE_DATE_IS_MINOR_OR_EQUALS.toString()
-             :null;
+     return conditionOfBoolean(validateDateIsMinor(modelBonoEntity.getDate()), ExperienceErrorsEnum.FILE_DATE_IS_MINOR_OR_EQUALS.toString(), null);
 }
 
 
